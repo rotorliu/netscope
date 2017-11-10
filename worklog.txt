@@ -1,0 +1,18 @@
+------------------netscope------------------
+netscope\src\caffe\layers.coffee
+netscope\lib\caffe\layers.js
+netscope\assets\js\netscope.js
+【node.js command】coffee --compile --output lib/ src/
+
+------------------apache--------------------
+Start apache in a DOS box:
+
+>httpd.exe
+
+Install as a service:
+
+>httpd.exe -k install
+
+ApacheMonitor:
+
+Double click ApacheMonitor.exe, or put it in your Startup folder.
