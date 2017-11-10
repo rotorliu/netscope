@@ -482,7 +482,7 @@ computeShapes = function(net) {
     return results;
   } catch (error) {
     e = error;
-    return Notify.warning("Can't infer network data shapes! " + e);
+    return Notify.warning("Can't infer network data shapes. " + e);
   }
 };
 
@@ -504,7 +504,7 @@ module.exports = CaffeParser = (function() {
 
 
 },{"./../network.coffee":8,"./../notify.coffee":9,"./../utils/utils.coffee":11,"./layers.coffee":3,"./parser":4}],3:[function(require,module,exports){
-var ConvolutionLayerBase, areShapesEqual, extractKernelSizes, extractPaddingSizes, extractStrideSizes, getLayerType, getParameterAsArray, getParameterLength, getValueOrDefault, isDataLayer, isLossLayer, isUniformLayer, layers, shapesToString, utils,
+var ConvolutionLayerBase, areShapesEqual, extractKernelSizes, extractPaddingSizes, extractStrideSizes, getLayerType, getParameterAsArray, getValueOrDefault, isDataLayer, isLossLayer, isUniformLayer, layers, shapesToString, utils,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
@@ -573,18 +573,6 @@ getParameterAsArray = function(parameter, requiredLength, name) {
     return results;
   })();
 };
-
-  getParameterLength = function(parameter) {
-    if (parameter != null) {
-      if (utils.typeIsArray(parameter)) {
-        return parameter.length;
-      } else {
-        return 1;
-      }
-    } else {
-      return 0;
-    }
-  };
 
 shapesToString = function(inputShapes) {
   var j, len, shape, text;
@@ -1022,265 +1010,6 @@ layers.Concat = this.ConcatLayer = (function() {
   return ConcatLayer;
 
 })();
-
-  layers.Slice = this.SliceLayer = (function() {
-    function SliceLayer(attribs) {
-      this.checkParameters = bind(this.checkParameters, this);
-      this.inferShapes = bind(this.inferShapes, this);
-      var params;
-      params = attribs != null ? attribs.slice_param : void 0;
-      this.slicePoint = params != null ? params.slice_point : void 0;
-      this.axis = getValueOrDefault(params.axis, 1);
-    }
-
-    SliceLayer.prototype.inferShapes = function(bottoms, tops) {
-      var firstInputShape, i, j, ref;
-      if ((tops != null ? tops[0] : void 0) == null) {
-        return;
-      }
-      this.slicePoint = getParameterAsArray(this.slicePoint, tops.length - 1, 'slice_point');
-      this.checkParameters(bottoms, tops);
-      firstInputShape = bottoms[0].shape;
-      for (i = j = 0, ref = tops.length - 1; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
-        tops[i].shape = firstInputShape.slice(0);
-        tops[i].shape[this.axis] = this.slicePoint[i];
-      }
-      tops[tops.length - 1].shape = firstInputShape.slice(0);
-      return tops[tops.length - 1].shape[this.axis] = firstInputShape[this.axis] - this.slicePoint[this.slicePoint.length - 1];
-    };
-
-    SliceLayer.prototype.checkParameters = function(bottoms, tops) {
-      if ((bottoms != null ? bottoms[0] : void 0) == null) {
-        throw 'Slice layer must have at least one bottom blob.';
-      }
-      if ((tops != null ? tops[1] : void 0) == null) {
-        throw 'Slice layer must have at least two top blob.';
-      }
-    };
-
-    return SliceLayer;
-
-  })();
-
-  layers.Permute = this.PermuteLayer = (function() {
-    function PermuteLayer(attribs) {
-      this.inferShapes = bind(this.inferShapes, this);
-      var params;
-      params = attribs != null ? attribs.permute_param : void 0;
-      this.order = params != null ? params.order : void 0;
-    }
-
-    PermuteLayer.prototype.inferShapes = function(bottoms, tops) {
-      var bottom, firstInputShape, i, j, ref, results, top;
-      this.order = getParameterAsArray(this.order, bottoms[0].shape.length, 'order');
-      firstInputShape = bottoms[0].shape;
-      top = tops[0];
-      bottom = bottoms[0];
-      top.shape = firstInputShape.slice(0);
-      results = [];
-      for (i = j = 0, ref = this.order.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
-        results.push(top.shape[i] = bottom.shape[this.order[i]]);
-      }
-      return results;
-    };
-
-    return PermuteLayer;
-
-  })();
-
-  layers.Flatten = this.FlattenLayer = (function() {
-    function FlattenLayer(attribs) {
-      this.inferShapes = bind(this.inferShapes, this);
-      var params;
-      params = attribs != null ? attribs.flatten_param : void 0;
-      this.axis = getValueOrDefault(params.axis, 1);
-    }
-
-    FlattenLayer.prototype.inferShapes = function(bottoms, tops) {
-      var i, j, outputShape, ref, ref1, results, top;
-      outputShape = bottoms[0].shape;
-      top = tops[0];
-      top.shape = outputShape.slice(0, this.axis + 1);
-      results = [];
-      for (i = j = ref = this.axis + 1, ref1 = outputShape.length; ref <= ref1 ? j < ref1 : j > ref1; i = ref <= ref1 ? ++j : --j) {
-        results.push(top.shape[this.axis] *= outputShape[i]);
-      }
-      return results;
-    };
-
-    return FlattenLayer;
-
-  })();
-
-  layers.PriorBox = this.PriorBoxLayer = (function() {
-    function PriorBoxLayer(attribs) {
-      this.inferShapes = bind(this.inferShapes, this);
-      var params;
-      params = attribs != null ? attribs.prior_box_param : void 0;
-      this.min_size = params != null ? params.min_size : void 0;
-      this.max_size = params != null ? params.max_size : void 0;
-      this.aspect_ratio = params != null ? params.aspect_ratio : void 0;
-      this.flip = params != null ? params.flip : void 0;
-    }
-
-    PriorBoxLayer.prototype.inferShapes = function(bottoms, tops) {
-      var already_exist, ar, aspect_ratio_length, aspect_ratio_param_length, aspect_ratios, height, i, j, k, l, len, len1, len2, m, max_size_length, min_size_length, num_priors, outputShape, ref, ref1, ref2, width;
-      min_size_length = getParameterLength(this.min_size);
-      max_size_length = getParameterLength(this.max_size);
-      aspect_ratio_param_length = getParameterLength(this.aspect_ratio);
-      aspect_ratios = [1.0];
-      if (aspect_ratio_param_length === 1) {
-        ar = this.aspect_ratio;
-        already_exist = false;
-        ref = aspect_ratios.length;
-        for (k = 0, len = ref.length; k < len; k++) {
-          j = ref[k];
-          if (Math.abs(ar - aspect_ratios[j]) < 1e-6) {
-            already_exist = true;
-            break;
-          }
-        }
-        if (already_exist !== true) {
-          aspect_ratios.push(ar);
-          if (this.flip) {
-            aspect_ratios.push(1.0 / ar);
-          }
-        }
-      } else {
-        ref1 = this.aspect_ratio;
-        for (l = 0, len1 = ref1.length; l < len1; l++) {
-          i = ref1[l];
-          ar = i;
-          already_exist = false;
-          ref2 = aspect_ratios.length;
-          for (m = 0, len2 = ref2.length; m < len2; m++) {
-            j = ref2[m];
-            if (Math.abs(ar - aspect_ratios[j]) < 1e-6) {
-              already_exist = true;
-              break;
-            }
-          }
-          if (already_exist !== true) {
-            aspect_ratios.push(ar);
-            if (this.flip) {
-              aspect_ratios.push(1.0 / ar);
-            }
-          }
-        }
-      }
-      aspect_ratio_length = aspect_ratios.length;
-      outputShape = bottoms[0].shape;
-      height = bottoms[0].shape[2];
-      width = bottoms[0].shape[3];
-      num_priors = aspect_ratio_length * min_size_length + max_size_length;
-      tops[0].shape = outputShape.slice(0, 3);
-      tops[0].shape[0] = 1;
-      tops[0].shape[1] = 2;
-      return tops[0].shape[2] = height * width * num_priors * 4;
-    };
-
-    return PriorBoxLayer;
-
-  })();
-
-  layers.Reshape = this.ReshapeLayer = (function() {
-    function ReshapeLayer(attribs) {
-      this.inferShapes = bind(this.inferShapes, this);
-      var params;
-      params = attribs != null ? attribs.reshape_param : void 0;
-      this.shape = params != null ? params.shape : void 0;
-    }
-
-    ReshapeLayer.prototype.inferShapes = function(bottoms, tops) {
-      var dim, dim_length, i, j, k, l, other_sum, outputShape, ref, ref1, ref2, results, sum;
-      dim_length = getParameterLength(this.shape.dim);
-      dim = getParameterAsArray(this.shape.dim, dim_length, 'dim');
-      outputShape = bottoms[0].shape;
-      sum = 1;
-      for (i = j = 0, ref = bottoms[0].shape.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
-        sum *= bottoms[0].shape[i];
-      }
-      tops[0].shape = outputShape.slice(0, dim_length);
-      other_sum = 1;
-      for (i = k = 0, ref1 = dim_length; 0 <= ref1 ? k < ref1 : k > ref1; i = 0 <= ref1 ? ++k : --k) {
-        if (dim[i] !== 0 && dim[i] !== -1) {
-          tops[0].shape[i] = dim[i];
-        }
-        if (dim[i] !== -1) {
-          other_sum *= tops[0].shape[i];
-        }
-      }
-      results = [];
-      for (i = l = 0, ref2 = dim_length; 0 <= ref2 ? l < ref2 : l > ref2; i = 0 <= ref2 ? ++l : --l) {
-        if (dim[i] === -1) {
-          results.push(tops[0].shape[i] = sum / other_sum);
-        } else {
-          results.push(void 0);
-        }
-      }
-      return results;
-    };
-
-    return ReshapeLayer;
-
-  })();
-
-  layers.Tiling = this.TilingLayer = (function() {
-    function TilingLayer(attribs) {
-      this.checkParameters = bind(this.checkParameters, this);
-      this.inferShapes = bind(this.inferShapes, this);
-      var params;
-      params = attribs != null ? attribs.tiling_param : void 0;
-      this.tile_dim = params != null ? params.tile_dim : void 0;
-    }
-
-    TilingLayer.prototype.inferShapes = function(bottoms, tops) {
-      var channels, height, outputShape, width;
-      this.checkParameters(bottoms, tops);
-      outputShape = bottoms[0].shape;
-      channels = bottoms[0].shape[1];
-      height = bottoms[0].shape[2];
-      width = bottoms[0].shape[3];
-      tops[0].shape = outputShape;
-      tops[0].shape[1] = channels / (this.tile_dim * this.tile_dim);
-      tops[0].shape[2] = height * this.tile_dim;
-      return tops[0].shape[3] = width * this.tile_dim;
-    };
-
-    TilingLayer.prototype.checkParameters = function(bottoms, tops) {
-      if (this.tile_dim == null) {
-        throw 'tile_dim must be specified.';
-      }
-      if (!(this.tile_dim > 0)) {
-        throw 'tile_dim must be positive.';
-      }
-      if (bottoms[0].shape[1] % (this.tile_dim * this.tile_dim) !== 0) {
-        throw 'The number of input channels for tiling layer must be multiples of the tile_dim.';
-      }
-    };
-
-    return TilingLayer;
-
-  })();
-
-  layers.Normalize = this.NormalizeLayer = (function() {
-    function NormalizeLayer(attribs) {
-      this.inferShapes = bind(this.inferShapes, this);
-      var params;
-      params = attribs != null ? attribs.norm_param : void 0;
-      this.across_spatial = params != null ? params.across_spatial : void 0;
-      this.channel_shared = params != null ? params.channel_shared : void 0;
-    }
-
-    NormalizeLayer.prototype.inferShapes = function(bottoms, tops) {
-      var outputShape;
-      outputShape = bottoms[0].shape;
-      return tops[0].shape = outputShape;
-    };
-
-    return NormalizeLayer;
-
-  })();
 
 layers.Eltwise = this.EltwiseLayer = (function() {
   function EltwiseLayer() {
@@ -3112,7 +2841,7 @@ module.exports = Editor = (function() {
     $('#net-column').width((100 - editorWidthPercentage) + '%');
     $('#master-container').prepend($editorBox);
     this.editor = CodeMirror($editorBox[0], {
-      value: '# Enter your network definition here!\n# Use Shift+Enter to update the visualization.',
+      value: '# Enter your network definition here.\n# Use Shift+Enter to update the visualization.',
       lineNumbers: true,
       lineWrapping: true
     });
