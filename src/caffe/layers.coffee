@@ -498,6 +498,31 @@ class @EltwiseLayer
                       "#{shapesToString(inputShapes)}. " +
                       "All axes must have the same sizes."
 
+layers.Axpy =
+class @AxpyLayer
+    inferShapes: (bottoms, tops) =>
+        unless tops?[0]? then return
+        @checkParameters bottoms, tops
+        firstInputShape = bottoms[1].shape
+        tops[0].shape = firstInputShape[..]
+
+    checkParameters: (bottoms, tops) =>
+        if bottoms?.length != 3
+            throw 'Axpy layer must have three inputs.'
+        inputShapes = (bottom.shape for bottom in bottoms)
+        firstShape = inputShapes[0]
+        if inputShapes[0][0] != inputShapes[1][0]
+            throw "InputShapes 0 and 1 at 0 axe must have the same sizes."
+        if inputShapes[0][1] != inputShapes[1][1]
+            throw "InputShapes 0 and 1 at 1 axe must have the same sizes."
+        if inputShapes[0].length == 4
+            if inputShapes[0][2] != 1 or inputShapes[0][3] != 1
+                throw "InputShapes 0 at 2、3 axe must be 1."
+        unless areShapesEqual inputShapes[1], inputShapes[2]
+            throw "Axpy layer received incorrect input shapes: " +
+                    "#{shapesToString(inputShapes)}. " +
+                    "InputShapes 1 and 2 at all axes must have the same sizes."
+
 layers.Crop =
 class @CropLayer
     constructor: (attribs) ->

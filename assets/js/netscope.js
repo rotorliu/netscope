@@ -1329,6 +1329,57 @@ layers.Eltwise = this.EltwiseLayer = (function() {
 
 })();
 
+  layers.Axpy = this.AxpyLayer = (function() {
+    function AxpyLayer() {
+      this.checkParameters = bind(this.checkParameters, this);
+      this.inferShapes = bind(this.inferShapes, this);
+    }
+
+    AxpyLayer.prototype.inferShapes = function(bottoms, tops) {
+      var firstInputShape;
+      if ((tops != null ? tops[0] : void 0) == null) {
+        return;
+      }
+      this.checkParameters(bottoms, tops);
+      firstInputShape = bottoms[1].shape;
+      return tops[0].shape = firstInputShape.slice(0);
+    };
+
+    AxpyLayer.prototype.checkParameters = function(bottoms, tops) {
+      var bottom, firstShape, inputShapes;
+      if ((bottoms != null ? bottoms.length : void 0) !== 3) {
+        throw 'Axpy layer must have three inputs.';
+      }
+      inputShapes = (function() {
+        var k, len, results;
+        results = [];
+        for (k = 0, len = bottoms.length; k < len; k++) {
+          bottom = bottoms[k];
+          results.push(bottom.shape);
+        }
+        return results;
+      })();
+      firstShape = inputShapes[0];
+      if (inputShapes[0][0] !== inputShapes[1][0]) {
+        throw "InputShapes 0 and 1 at 0 axe must have the same sizes.";
+      }
+      if (inputShapes[0][1] !== inputShapes[1][1]) {
+        throw "InputShapes 0 and 1 at 1 axe must have the same sizes.";
+      }
+      if (inputShapes[0].length === 4) {
+        if (inputShapes[0][2] !== 1 || inputShapes[0][3] !== 1) {
+          throw "InputShapes 0 at 2、3 axe must be 1.";
+        }
+      }
+      if (!areShapesEqual(inputShapes[1], inputShapes[2])) {
+        throw "Axpy layer received incorrect input shapes: " + ((shapesToString(inputShapes)) + ". ") + "InputShapes 1 and 2 at all axes must have the same sizes.";
+      }
+    };
+
+    return AxpyLayer;
+
+  })();
+
 layers.Crop = this.CropLayer = (function() {
   function CropLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);
