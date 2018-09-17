@@ -565,6 +565,7 @@ isUniformLayer = (lt) ->
     (/lrn/i.test       lt) or
     (/dropout/i.test   lt) or
     (/batchnorm/i.test lt) or
+    (/groupnorm/i.test lt) or
     (/mvn/i.test       lt) or
     (/softmax/i.test   lt)
 
