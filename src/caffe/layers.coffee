@@ -541,6 +541,61 @@ class @CropLayer
         if bottoms?.length != 2
             throw 'Crop layer must have exactly two bottom blobs.'
 
+layers.Interp = 
+class @InterpLayer
+    constructor: (attribs) ->
+        @params = attribs.interp_param
+        @height = getValueOrDefault @params?.height, 0
+        @width = getValueOrDefault @params?.width, 0
+        @zoom_factor = getValueOrDefault @params?.zoom_factor, 1
+        @shrink_factor = getValueOrDefault @params?.shrink_factor, 1
+        @pad_beg = getValueOrDefault @params?.pad_beg, 0
+        @pad_end = getValueOrDefault @params?.pad_end, 0
+
+    inferShapes: (bottoms, tops) =>
+        @checkParameters bottoms, tops
+        outputShape = bottoms[0].shape
+        height_in = bottoms[0].shape[2]
+        width_in = bottoms[0].shape[3]
+        tops[0].shape = outputShape
+        height_in_eff = height_in + @pad_beg + @pad_end
+        width_in_eff = width_in + @pad_beg + @pad_end
+        if (@params.shrink_factor?) and (not @params.zoom_factor?)
+            height_out = (height_in_eff - 1) / @shrink_factor + 1;
+            width_out = (width_in_eff - 1) / @shrink_factor + 1;
+        else if (not @params.shrink_factor?) and (@params.zoom_factor?)
+            height_out = height_in_eff + (height_in_eff - 1) * (@zoom_factor - 1);
+            width_out = width_in_eff + (width_in_eff - 1) * (@zoom_factor - 1);
+        else if @params.height? and @params.width?
+            height_out  = @height;
+            width_out  = @width;
+        else if (@params.shrink_factor?) and (@params.zoom_factor?)
+            height_out = (height_in_eff - 1) / @shrink_factor + 1;
+            width_out = (width_in_eff - 1) / @shrink_factor + 1;
+            height_out = height_out + (height_out - 1) * (@zoom_factor - 1);
+            width_out = width_out + (width_out - 1) * (@zoom_factor - 1);
+
+        unless height_in_eff > 0
+            throw 'height should be positive.'
+        unless width_in_eff > 0
+            throw 'width should be positive.'
+        unless height_out > 0
+            throw 'height should be positive.'
+        unless width_out > 0
+            throw 'width should be positive.'
+
+        tops[0].shape[2] = height_out
+        tops[0].shape[3] = width_out
+
+    checkParameters: (bottoms, tops) =>
+        if @params.shrink_factor?
+            unless @shrink_factor >= 1
+                throw 'shrink_factor must be positive.'
+        if @params.zoom_factor?
+            unless @zoom_factor >= 1
+                throw 'zoom_factor must be positive.'
+
+
 isLossLayer = (layerType) ->
     /loss/i.test layerType
 
@@ -566,6 +621,7 @@ isUniformLayer = (lt) ->
     (/dropout/i.test   lt) or
     (/batchnorm/i.test lt) or
     (/groupnorm/i.test lt) or
+    (/bn/i.test lt) or
     (/mvn/i.test       lt) or
     (/softmax/i.test   lt)
 
